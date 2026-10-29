@@ -1,0 +1,2 @@
+# Local passwords for the lab databases. Never committed; .env.sample shows the names.
+.env

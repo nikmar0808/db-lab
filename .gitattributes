@@ -1,0 +1,5 @@
+# Normalise line endings of text files when they are committed.
+* text=auto
+# Shell scripts run inside Linux containers: they must always have Linux line endings (LF),
+# even when checked out on Windows. A Windows line ending (CRLF) breaks them with "bad interpreter".
+*.sh text eol=lf
