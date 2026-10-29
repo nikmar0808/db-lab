@@ -1,0 +1,65 @@
+# The lab's two databases. Start: docker compose up -d --wait   Stop: docker compose down
+# Passwords come from .env (see .env.sample). Both ports are reachable only from this machine.
+name: db-lab                       # prefix for container and volume names, e.g. db-lab-postgres-1
+
+services:
+  postgres:
+    image: postgres:18             # PostgreSQL 18; the exact minor version is recorded in docs/versions.md
+    environment:
+      # ":?" stops Compose with this message if the value is missing from .env (lesson A3).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      LAB_OWNER_PASSWORD: ${LAB_OWNER_PASSWORD:?set LAB_OWNER_PASSWORD in .env}
+      LAB_APP_PASSWORD: ${LAB_APP_PASSWORD:?set LAB_APP_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5433:5432"      # this machine's port 5433 -> the container's 5432 (lesson A1)
+    volumes:
+      # PostgreSQL 18's image keeps its data under /var/lib/postgresql (older versions: .../data).
+      - pg-data:/var/lib/postgresql
+      # First-start scripts, read-only (:ro) inside the container (lesson A2).
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Healthy when the server accepts network connections to the lab database. -h 127.0.0.1 matters:
+      # during first-start set-up the image runs a temporary server that accepts no network
+      # connections, so the check cannot report "healthy" before the set-up script has finished.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d utility_lab"]
+      interval: 5s                 # run the check every 5 seconds
+      timeout: 5s                  # a check that takes longer counts as failed
+      retries: 20                  # 20 failures in a row mark the container unhealthy
+      start_period: 10s            # failures in the first 10 seconds are not counted
+
+  mongo:
+    image: mongo:8.2               # MongoDB 8.2 line; exact version recorded in docs/versions.md
+    # start.sh makes the key file if needed, then hands over to the image's own start-up script (lesson A4).
+    entrypoint: ["bash", "/opt/db-lab/start.sh"]
+    # Passed on by start.sh: a member of the replica set rs0, listening on all of the container's network
+    # addresses (the port rule below still limits who can reach it), with the key file. A key file also
+    # switches login on.
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--keyFile", "/data/keyfile/mongo.key"]
+    environment:
+      # The image creates this administrator on its first start with an empty volume (lesson A2).
+      MONGO_INITDB_ROOT_USERNAME: mongo_admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+      # Read by mongo/init/01-app-user.js to create the application's account.
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      # The key file, in its own volume on Docker's Linux filesystem, never under C:\ (lesson A4).
+      - mongo-key:/data/keyfile
+      # The start-up and health-check scripts, read-only.
+      - ./mongo/scripts:/opt/db-lab:ro
+      # First-start scripts, read-only (lesson A2).
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "bash", "/opt/db-lab/healthcheck.sh"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s            # the first start creates the administrator and lab_app before mongod restarts
+
+# Named volumes: Docker keeps them until "docker compose down -v" (lesson A2).
+volumes:
+  pg-data:
+  mongo-data:
+  mongo-key:
