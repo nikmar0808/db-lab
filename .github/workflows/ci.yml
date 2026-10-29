@@ -1,0 +1,27 @@
+# Automated checks for db-lab (Part A, lesson A6). Later stages add Java and Python jobs to this file.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]               # every pull request into main
+  push:
+    branches: [main]               # and every merge that lands on main
+
+permissions:
+  contents: read                   # the jobs may read the repository, nothing more
+
+jobs:
+  # Fails if anything that looks like a password, key or token is found anywhere in the history.
+  # Its name, "secret-scan", is what the ruleset on main requires (Part C, step C9).
+  secret-scan:
+    runs-on: ubuntu-latest         # a fresh Linux machine provided by GitHub for each run
+    steps:
+      - uses: actions/checkout@v7  # copy the repository onto that machine
+        with:
+          fetch-depth: 0           # the whole history, not only the latest commit
+      - name: Gitleaks scan of the full history
+        # A fixed Gitleaks version, never :latest (lesson A6). --redact hides any secret found,
+        # so that the public log does not repeat it.
+        run: >
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1
+          detect --source /repo --redact -v
