@@ -18,6 +18,27 @@ small, made-up utility data set (customers, premises, meters, meter readings, ta
 
 `docker compose down` stops both and keeps the data; `docker compose down -v` also deletes the data.
 
+## Build the PostgreSQL tables
+
+The scripts in `sql/` are visible inside the PostgreSQL container as `/sql`. Run them as `lab_owner`,
+in this order, each as one transaction:
+
+```text
+docker compose exec -e PGPASSWORD=<lab_owner password> postgres psql -h 127.0.0.1 -U lab_owner -d utility_lab --single-transaction -v ON_ERROR_STOP=1 -f /sql/01-tables.sql
+```
+
+then the same with `/sql/02-sample-data.sql` and `/sql/03-calculate-bill.sql`. `/sql/00-drop-all.sql`
+removes everything, so that the three can be run again.
+
+| Table | Holds |
+|---|---|
+| `customer` | People and companies that receive bills |
+| `tariff` | Price lists: rate per kWh and standing charge per day |
+| `premise` | Supplied addresses, each with one customer and one tariff |
+| `meter` | Meters installed at premises |
+| `meter_reading` | Energy recorded by a meter for the day starting at `read_at` |
+| `bill` | One bill per premise and period, with its amount from `calculate_bill` |
+
 ## Layout
 
 | Path | Contents |
@@ -26,5 +47,7 @@ small, made-up utility data set (customers, premises, meters, meter readings, ta
 | `postgres/init/` | PostgreSQL first-start script: accounts and database |
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
+| `sql/` | Tables, sample data and the function `calculate_bill` (`00` to `03`) |
+| `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills |
 | `docs/adr/` | Decision records |
 | `docs/versions.md` | Versions in use, recorded from the tools themselves |

@@ -17,6 +17,8 @@ services:
       - pg-data:/var/lib/postgresql
       # First-start scripts, read-only (:ro) inside the container (lesson A2).
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      # Stage 1 SQL scripts, read-only, run with psql -f /sql/... (Stage 1, lesson A1).
+      - ./sql:/sql:ro
     healthcheck:
       # Healthy when the server accepts network connections to the lab database. -h 127.0.0.1 matters:
       # during first-start set-up the image runs a temporary server that accepts no network

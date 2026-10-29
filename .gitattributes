@@ -3,3 +3,7 @@
 # Shell scripts run inside Linux containers: they must always have Linux line endings (LF),
 # even when checked out on Windows. A Windows line ending (CRLF) breaks them with "bad interpreter".
 *.sh text eol=lf
+# SQL scripts also run inside the Linux container (psql -f), so they keep Linux line endings too.
+*.sql text eol=lf
+# SQL scripts also run inside the Linux container (psql -f), so they keep Linux line endings too.
+*.sql text eol=lf
