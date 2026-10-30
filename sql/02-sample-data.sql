@@ -1,5 +1,5 @@
 -- Stage 1: a small, made-up data set for learning (a few hundred rows).
--- Run as lab_owner, as one transaction, after 01-tables.sql:
+-- Run as lab_owner, as one transaction, after the Java program has built the tables (Stage 2):
 --   psql ... --single-transaction -v ON_ERROR_STOP=1 -f /sql/02-sample-data.sql
 -- Rows are linked by their natural keys (e-mail, address, serial number), never by assumed id numbers,
 -- so the script does not depend on which numbers the identity columns hand out. Each INSERT also

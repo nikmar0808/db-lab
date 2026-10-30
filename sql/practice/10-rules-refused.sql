@@ -1,4 +1,4 @@
--- Stage 1 practice: every rule in 01-tables.sql, proved by a change the database refuses.
+-- Stage 1 practice: every rule in the migration V1__tables.sql, proved by a change the database refuses.
 -- Run as lab_app, WITHOUT ON_ERROR_STOP, so psql reports each refusal and carries on:
 --   psql ... -f /sql/practice/10-rules-refused.sql
 -- psql commits each statement on its own (autocommit), and every statement here fails, so nothing changes.
