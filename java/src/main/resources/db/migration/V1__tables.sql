@@ -1,6 +1,7 @@
--- Stage 1: the six tables of the utility data set, with their keys and rules.
--- Run as lab_owner, as one transaction:  psql ... --single-transaction -v ON_ERROR_STOP=1 -f /sql/01-tables.sql
--- In Stage 2 this file becomes the first Flyway migration, so it has no BEGIN or COMMIT of its own.
+-- Migration 1: the six tables of the utility data set, with their keys and rules.
+-- Written in Stage 1 as sql/01-tables.sql; moved here in Stage 2. Flyway runs it once, as lab_owner, inside a
+-- transaction of its own, which is why the file has no BEGIN or COMMIT. Never edit it after it has run:
+-- a change to the tables is a new migration, V3 and onwards.
 -- Names: lower case with underscores; constraints named <table>_<what>_<kind>, where kind is
 -- pk (primary key), fk (foreign key), uk (unique), ck (check); indexes end in _ix.
 

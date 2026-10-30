@@ -1,4 +1,4 @@
-# Automated checks for db-lab (Part A, lesson A6). Later stages add Java and Python jobs to this file.
+# Automated checks for db-lab (Stage 0, lesson A6). Later stages add more jobs to this file.
 name: CI
 
 on:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   # Fails if anything that looks like a password, key or token is found anywhere in the history.
-  # Its name, "secret-scan", is what the ruleset on main requires (Part C, step C9).
+  # Its name, "secret-scan", is what the ruleset on main requires (Stage 0, step C9).
   secret-scan:
     runs-on: ubuntu-latest         # a fresh Linux machine provided by GitHub for each run
     steps:
@@ -20,8 +20,25 @@ jobs:
         with:
           fetch-depth: 0           # the whole history, not only the latest commit
       - name: Gitleaks scan of the full history
-        # A fixed Gitleaks version, never :latest (lesson A6). --redact hides any secret found,
+        # A fixed Gitleaks version, never :latest (Stage 0, lesson A6). --redact hides any secret found,
         # so that the public log does not repeat it.
         run: >
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1
           detect --source /repo --redact -v
+
+  # Builds the Java project and runs all its tests, including those against a throwaway PostgreSQL that
+  # Testcontainers starts on the runner's own Docker (Stage 2, lesson A11). Its name, "java-build-test",
+  # becomes a required check on main (Stage 2, step C10).
+  java-build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: java    # every "run" step starts in the java folder
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6  # installs a JDK on the runner
+        with:
+          distribution: temurin    # the Eclipse Temurin build of OpenJDK
+          java-version: "21"
+          cache: maven             # keeps downloaded libraries between runs, so later runs start faster
+      - run: mvn -B verify         # -B: batch mode, plain log output with no progress animation

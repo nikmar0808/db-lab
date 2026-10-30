@@ -1,6 +1,6 @@
--- Stage 1: the database function that calculates a bill's amount.
--- Run as lab_owner, after 01-tables.sql:  psql ... -v ON_ERROR_STOP=1 -f /sql/03-calculate-bill.sql
--- In Stage 2 it becomes a Flyway migration, and Java calls it the way 2013 code called a package procedure.
+-- Migration 2: the database function that calculates a bill's amount.
+-- Written in Stage 1 as sql/03-calculate-bill.sql; moved here in Stage 2. Flyway runs it once, as lab_owner,
+-- after migration 1. Java calls it the way 2013 code called a package procedure.
 --
 -- The amount for a premise and a period is:
 --   (total kWh of all the premise's meters in the period) x (tariff rate per kWh)

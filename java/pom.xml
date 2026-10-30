@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Maven build file of the lab's Java project (Stage 2, lesson A2). -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Inherit Spring Boot's build settings and its list of tested library versions. -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.dblab</groupId>
+    <artifactId>billing-lab</artifactId>
+    <version>0.1.0</version>
+    <name>billing-lab</name>
+    <description>PostgreSQL from Java: the main task built four ways</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <!-- The JVM's time zone for tests and for spring-boot:run (Stage 2, lesson A9). -->
+        <jvm.timezone>-Duser.timezone=UTC</jvm.timezone>
+    </properties>
+
+    <dependencies>
+        <!-- JPA with Hibernate, Spring Data JPA, JDBC, JdbcClient and the HikariCP pool. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <!-- Flyway, run at start-up, and its PostgreSQL support. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <!-- The PostgreSQL JDBC driver; needed only when the program runs. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Tests: JUnit 5, AssertJ, Spring's test support, and the JPA test slice. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Testcontainers: a real, throwaway PostgreSQL for every test run. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Runs the tests; argLine sets the time zone of the JVM that runs them. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>${jvm.timezone}</argLine>
+                </configuration>
+            </plugin>
+            <!-- Builds the runnable jar, and runs the program with mvn spring-boot:run. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArguments>${jvm.timezone}</jvmArguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,2 +1,4 @@
 # Local passwords for the lab databases. Never committed; .env.sample shows the names.
 .env
+# Maven's build output: compiled classes, test reports, the jar. Rebuilt by every build, so never committed.
+target/

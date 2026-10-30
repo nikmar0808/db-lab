@@ -20,15 +20,18 @@ small, made-up utility data set (customers, premises, meters, meter readings, ta
 
 ## Build the PostgreSQL tables
 
-The scripts in `sql/` are visible inside the PostgreSQL container as `/sql`. Run them as `lab_owner`,
-in this order, each as one transaction:
+The tables and the function `calculate_bill` are Flyway migrations in
+`java/src/main/resources/db/migration/`. The Java program applies any that have not run yet, as `lab_owner`,
+every time it starts. With the passwords from `.env` in the environment:
 
 ```text
-docker compose exec -e PGPASSWORD=<lab_owner password> postgres psql -h 127.0.0.1 -U lab_owner -d utility_lab --single-transaction -v ON_ERROR_STOP=1 -f /sql/01-tables.sql
+cd java
+mvn spring-boot:run
 ```
 
-then the same with `/sql/02-sample-data.sql` and `/sql/03-calculate-bill.sql`. `/sql/00-drop-all.sql`
-removes everything, so that the three can be run again.
+Then, for the sample data, run `sql/02-sample-data.sql` as `lab_owner` inside the PostgreSQL container
+(`/sql/02-sample-data.sql`). `sql/00-drop-all.sql` removes everything, Flyway's history included, so that the
+next start builds it all again.
 
 | Table | Holds |
 |---|---|
@@ -37,17 +40,25 @@ removes everything, so that the three can be run again.
 | `premise` | Supplied addresses, each with one customer and one tariff |
 | `meter` | Meters installed at premises |
 | `meter_reading` | Energy recorded by a meter for the day starting at `read_at` |
-| `bill` | One bill per premise and period, with its amount from `calculate_bill` |
+| `bill` | One bill per premise and period |
+
+## The Java project
+
+Spring Boot 4 with JDBC, `JdbcClient`, Spring Data JPA and Hibernate, Flyway and HikariCP. The main task,
+recording readings and producing a bill in one transaction, is built four ways: plain JDBC, `JdbcClient`,
+Spring Data JPA, and a call to the database function. `mvn verify` in `java/` runs every test against a
+throwaway PostgreSQL 18 started by Testcontainers, so Docker must be running.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
 | `docker-compose.yml` | The two databases |
-| `postgres/init/` | PostgreSQL first-start script: accounts and database |
+| `postgres/init/` | PostgreSQL first-start script: accounts and database (also used by the Java tests) |
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
-| `sql/` | Tables, sample data and the function `calculate_bill` (`00` to `03`) |
+| `java/` | The Spring Boot project: migrations, the four ways, tests |
+| `sql/` | Sample data, and a script to remove everything |
 | `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills |
 | `docs/adr/` | Decision records |
 | `docs/versions.md` | Versions in use, recorded from the tools themselves |
