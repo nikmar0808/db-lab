@@ -46,7 +46,7 @@ next start builds it all again.
 
 Spring Boot 4 with JDBC, `JdbcClient`, Spring Data JPA and Hibernate, Flyway and HikariCP. The main task,
 recording readings and producing a bill in one transaction, is built four ways: plain JDBC, `JdbcClient`,
-Spring Data JPA, and a call to the database function. `mvn verify` in `java/` runs every test against a
+Spring Data JPA, and a call to the database function. The account summary is built three ways (Stage 4). `mvn verify` in `java/` runs every test against a
 throwaway PostgreSQL 18 started by Testcontainers, so Docker must be running.
 
 ## The Python project
@@ -65,6 +65,25 @@ python -m venv .venv
 `python -m billing.report` reads the lab database both ways and changes nothing. `alembic_practice/` holds an
 Alembic exercise on its own database, `alembic_lab`, never on `utility_lab`.
 
+## Performance work (Stage 4)
+
+`sql/03-large-data.sql` adds about a million made-up readings (`-v customers=300` for 300,000);
+`sql/04-remove-large-data.sql` removes exactly those rows. On that data:
+
+- `sql/practice/20-query-plans.sql` shows six questions with their real plans (`EXPLAIN (ANALYZE, BUFFERS)`);
+- `sql/practice/21-index-write-cost.sql` times what one more index costs on inserts;
+- the Java program, run with the Spring profile `measure`, times query plans, three ways of building the account
+  summary, and seven ways of writing many rows, and writes the results to `docs/results/<label>.md`:
+
+```text
+cd java
+mvn spring-boot:run -Dspring-boot.run.profiles=measure -Dspring-boot.run.arguments=--measure.label=<label>
+```
+
+`docs/performance-results.md` explains what the measurements show. The PostgreSQL container loads
+`pg_stat_statements`, which records every statement the server runs (`CREATE EXTENSION pg_stat_statements;` once,
+as `postgres`, in `utility_lab`).
+
 ## Layout
 
 | Path | Contents |
@@ -75,7 +94,9 @@ Alembic exercise on its own database, `alembic_lab`, never on `utility_lab`.
 | `mongo/init/` | MongoDB first-start script: the application's account |
 | `java/` | The Spring Boot project: migrations, the four ways, tests |
 | `python/` | The Python project: psycopg and SQLAlchemy ways, tests, the Alembic exercise |
-| `sql/` | Sample data, and a script to remove everything |
-| `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills |
+| `sql/` | Sample data, the large data set, and scripts to remove them |
+| `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost |
 | `docs/adr/` | Decision records |
 | `docs/versions.md` | Versions in use, recorded from the tools themselves |
+| `docs/results/` | Measurement results written by the Java program's `measure` profile |
+| `docs/performance-results.md` | What the measurements show |
