@@ -25,13 +25,14 @@ class MigrationsTest extends PostgresTestBase {
     JdbcClient jdbc;
 
     @Test
-    void flywayAppliedBothMigrationsAsTheOwner() {
+    void flywayAppliedEveryMigrationAsTheOwner() {
         List<String> applied = jdbc.sql("""
                         SELECT version || ' ' || description || ' by ' || installed_by
                         FROM flyway_schema_history WHERE success ORDER BY installed_rank""")
                 .query(String.class).list();
 
-        assertThat(applied).containsExactly("1 tables by lab_owner", "2 calculate bill by lab_owner");
+        assertThat(applied).containsExactly("1 tables by lab_owner", "2 calculate bill by lab_owner",
+                "3 reading time index by lab_owner", "4 bill version by lab_owner");
     }
 
     @Test

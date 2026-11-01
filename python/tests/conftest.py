@@ -66,9 +66,12 @@ def _apply_migrations(db: LabDatabase) -> None:
 
     Flyway owns these tables (Stage 2). The tests only replay its files on an empty, throwaway database, so
     that Python is tested against exactly the tables Java builds.
+
+    autocommit=True: each file is sent as it is and commits on its own, with no transaction around the files.
+    V3 (Stage 4) holds CREATE INDEX CONCURRENTLY, which PostgreSQL refuses inside a transaction block.
     """
     files = sorted(MIGRATIONS.glob("V*__*.sql"), key=lambda f: int(f.name[1:].split("__")[0]))
-    with psycopg.connect(db.conninfo("lab_owner")) as conn:  # commits at the end of the with-block
+    with psycopg.connect(db.conninfo("lab_owner"), autocommit=True) as conn:
         for file in files:
             conn.execute(file.read_text(encoding="utf-8"))
 

@@ -5,6 +5,10 @@ name: db-lab                       # prefix for container and volume names, e.g.
 services:
   postgres:
     image: postgres:18             # PostgreSQL 18; the exact minor version is recorded in docs/versions.md
+    # Server settings given at start (Stage 4, lesson A8): load the add-on pg_stat_statements, which records
+    # every statement the server runs. It must be loaded when the server starts; CREATE EXTENSION then makes
+    # its view available in a database. "track=all" also counts statements run inside functions.
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
     environment:
       # ":?" stops Compose with this message if the value is missing from .env (lesson A3).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}

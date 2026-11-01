@@ -7,6 +7,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 
 /** The table premise, with its links to its customer and its tariff. */
 @Entity
@@ -28,6 +31,10 @@ public class Premise {
     @JoinColumn(name = "tariff_code")
     private Tariff tariff;
 
+    // The meters installed here: the other side of Meter.premise, loaded when first used (Stage 4, lesson A5).
+    @OneToMany(mappedBy = "premise")
+    private List<Meter> meters = new ArrayList<>();
+
     protected Premise() {
     }
 
@@ -45,5 +52,9 @@ public class Premise {
 
     public Tariff getTariff() {
         return tariff;
+    }
+
+    public List<Meter> getMeters() {
+        return meters;
     }
 }

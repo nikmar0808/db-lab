@@ -2,7 +2,9 @@ package com.dblab.billing.jpa;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +28,20 @@ public interface MeterReadingRepository extends JpaRepository<MeterReading, Long
     BigDecimal totalKwh(@Param("premiseId") long premiseId,
                         @Param("from") OffsetDateTime from,
                         @Param("to") OffsetDateTime to);
+
+    // The newest reading of one meter (Stage 4, lesson A5): ORDER BY read_at DESC, first row only. Called once
+    // per meter, this is the "+1" of an N+1 problem.
+    Optional<MeterReading> findFirstByMeterIdOrderByReadAtDesc(long meterId);
+
+    // The newest reading of each of many meters, in one query. JPQL has no LATERAL, so this one is written in
+    // PostgreSQL's own SQL (nativeQuery): for each meter, read the last entry of its part of the index
+    // (meter_id, read_at) and stop. Hibernate still turns each row into a MeterReading object.
+    @Query(value = """
+            SELECT r.*
+            FROM meter m
+            CROSS JOIN LATERAL (
+                SELECT * FROM meter_reading x WHERE x.meter_id = m.id ORDER BY x.read_at DESC LIMIT 1
+            ) r
+            WHERE m.id IN (:meterIds)""", nativeQuery = true)
+    List<MeterReading> findLatestForMeters(@Param("meterIds") Collection<Long> meterIds);
 }

@@ -33,4 +33,10 @@ public class Meter {
     public String getSerialNumber() {
         return serialNumber;
     }
+
+    // Asking a not-yet-loaded premise for its id sends no query: Hibernate already holds the id (the
+    // foreign-key value) in its stand-in object, the proxy.
+    public Premise getPremise() {
+        return premise;
+    }
 }

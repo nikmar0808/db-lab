@@ -37,6 +37,10 @@ public class MeterReading {
         return id;
     }
 
+    public Meter getMeter() {
+        return meter;
+    }
+
     public OffsetDateTime getReadAt() {
         return readAt;
     }

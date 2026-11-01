@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -37,6 +38,12 @@ public class Bill {
     @Enumerated(EnumType.STRING)
     private BillStatus status;
 
+    // Optimistic locking (Stage 4, lesson A9; column added by V4). Hibernate adds "AND version = ?" to every
+    // UPDATE of a bill and increases the number by one. If the UPDATE changes no row, someone else changed the
+    // bill after it was read, and Hibernate throws an OptimisticLockException instead of overwriting their change.
+    @Version
+    private int version;
+
     protected Bill() {
     }
 
@@ -55,5 +62,14 @@ public class Bill {
 
     public BigDecimal getAmount() {
         return amount;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    /** A late fee (positive) or a credit (negative), added to the amount. */
+    public void adjustAmount(BigDecimal change) {
+        this.amount = this.amount.add(change);
     }
 }

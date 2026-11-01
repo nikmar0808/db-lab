@@ -26,3 +26,4 @@ Recorded on 2026-10-29 from the tools' own output (Stage 0).
 | pytest | 9.2.0 | `pip freeze` |
 | Testcontainers (Python) | 4.15.0 | `pip freeze` |
 | mypy | 2.4.1 | `pip freeze` |
+| pg_stat_statements (extension) | 1.12 | `SELECT extversion FROM pg_extension` |
