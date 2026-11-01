@@ -18,3 +18,11 @@ Recorded on 2026-10-29 from the tools' own output (Stage 0).
 | PostgreSQL JDBC driver | 42.7.14 | Maven, `dependency:list` |
 | Testcontainers | 2.0.5 | Maven, `dependency:list` |
 | JUnit Jupiter | 6.0.3 | Maven, `dependency:list` |
+| Python (local) | Python 3.14.7 | `python --version` |
+| psycopg | 3.3.6 | `pip freeze` |
+| psycopg-pool | 3.3.3 | `pip freeze` |
+| SQLAlchemy | 2.1.6 | `pip freeze` |
+| Alembic | 1.20.1 | `pip freeze` |
+| pytest | 9.2.0 | `pip freeze` |
+| Testcontainers (Python) | 4.15.0 | `pip freeze` |
+| mypy | 2.4.1 | `pip freeze` |

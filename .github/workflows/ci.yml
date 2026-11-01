@@ -1,4 +1,4 @@
-# Automated checks for db-lab (Stage 0, lesson A6). Later stages add more jobs to this file.
+# Automated checks for db-lab (Stage 0, lesson A6). Each stage adds the jobs for what it builds.
 name: CI
 
 on:
@@ -42,3 +42,22 @@ jobs:
           java-version: "21"
           cache: maven             # keeps downloaded libraries between runs, so later runs start faster
       - run: mvn -B verify         # -B: batch mode, plain log output with no progress animation
+
+  # Installs the Python project, checks its types, and runs all its tests, including those against a throwaway
+  # PostgreSQL that Testcontainers starts on the runner's own Docker (Stage 3, lesson A9). Its name,
+  # "python-build-test", becomes a required check on main (Stage 3, step C10).
+  python-build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python  # every "run" step starts in the python folder
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7  # installs Python on the runner
+        with:
+          python-version: "3.14"
+          cache: pip                   # keeps downloaded packages between runs
+          cache-dependency-path: python/requirements*.txt   # a new cache whenever either file changes
+      - run: pip install -r requirements-dev.txt
+      - run: mypy billing              # the type check: fails the job on any error
+      - run: pytest -v                 # the tests: fail the job on any failure

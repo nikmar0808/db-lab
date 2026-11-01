@@ -2,3 +2,8 @@
 .env
 # Maven's build output: compiled classes, test reports, the jar. Rebuilt by every build, so never committed.
 target/
+# Python: the virtual environment, compiled bytecode, and the caches of pytest and mypy. All rebuilt locally.
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/

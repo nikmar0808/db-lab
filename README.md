@@ -49,6 +49,22 @@ recording readings and producing a bill in one transaction, is built four ways: 
 Spring Data JPA, and a call to the database function. `mvn verify` in `java/` runs every test against a
 throwaway PostgreSQL 18 started by Testcontainers, so Docker must be running.
 
+## The Python project
+
+The same main task from Python, two ways: psycopg with hand-written SQL, and the SQLAlchemy 2 ORM in its typed
+style. Flyway (Java) owns the tables; the Python tests replay the same migration files on a throwaway
+PostgreSQL 18. In `python/`, with a virtual environment:
+
+```text
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe -m pytest -v
+.venv\Scripts\python.exe -m mypy billing
+```
+
+`python -m billing.report` reads the lab database both ways and changes nothing. `alembic_practice/` holds an
+Alembic exercise on its own database, `alembic_lab`, never on `utility_lab`.
+
 ## Layout
 
 | Path | Contents |
@@ -58,6 +74,7 @@ throwaway PostgreSQL 18 started by Testcontainers, so Docker must be running.
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
 | `java/` | The Spring Boot project: migrations, the four ways, tests |
+| `python/` | The Python project: psycopg and SQLAlchemy ways, tests, the Alembic exercise |
 | `sql/` | Sample data, and a script to remove everything |
 | `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills |
 | `docs/adr/` | Decision records |
