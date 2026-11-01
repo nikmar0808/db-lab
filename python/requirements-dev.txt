@@ -1,0 +1,5 @@
+# Everything in requirements.txt, plus the tools used only to test and check the code.
+-r requirements.txt
+pytest==9.2.0
+testcontainers[postgres]==4.15.0
+mypy==2.4.1

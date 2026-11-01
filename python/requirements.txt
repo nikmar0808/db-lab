@@ -1,0 +1,7 @@
+# The libraries the billing package needs, at the exact versions it was tested with (Stage 3, lesson A3).
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+SQLAlchemy==2.1.6
+alembic==1.20.1
+# The world's time-zone rules, for zoneinfo on Windows, which has no copy of its own.
+tzdata==2026.6
