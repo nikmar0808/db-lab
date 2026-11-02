@@ -26,9 +26,9 @@ jobs:
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1
           detect --source /repo --redact -v
 
-  # Builds the Java project and runs all its tests, including those against a throwaway PostgreSQL that
-  # Testcontainers starts on the runner's own Docker (Stage 2, lesson A11). Its name, "java-build-test",
-  # becomes a required check on main (Stage 2, step C10).
+  # Builds the Java project and runs all its tests, including those against a throwaway PostgreSQL and, from
+  # Stage 6, a throwaway MongoDB, which Testcontainers starts on the runner's own Docker (Stage 2, lesson A11).
+  # Its name, "java-build-test", is a required check on main (Stage 2, step C10).
   java-build-test:
     runs-on: ubuntu-latest
     defaults:
@@ -44,8 +44,8 @@ jobs:
       - run: mvn -B verify         # -B: batch mode, plain log output with no progress animation
 
   # Installs the Python project, checks its types, and runs all its tests, including those against a throwaway
-  # PostgreSQL that Testcontainers starts on the runner's own Docker (Stage 3, lesson A9). Its name,
-  # "python-build-test", becomes a required check on main (Stage 3, step C10).
+  # PostgreSQL and, from Stage 6, a throwaway MongoDB, which Testcontainers starts on the runner's own Docker
+  # (Stage 3, lesson A9). Its name, "python-build-test", is a required check on main (Stage 3, step C10).
   python-build-test:
     runs-on: ubuntu-latest
     defaults:
@@ -59,5 +59,5 @@ jobs:
           cache: pip                   # keeps downloaded packages between runs
           cache-dependency-path: python/requirements*.txt   # a new cache whenever either file changes
       - run: pip install -r requirements-dev.txt
-      - run: mypy billing              # the type check: fails the job on any error
+      - run: mypy billing mongo_lab    # the type check, of both packages: fails the job on any error
       - run: pytest -v                 # the tests: fail the job on any failure
