@@ -27,3 +27,4 @@ Recorded on 2026-10-29 from the tools' own output (Stage 0).
 | Testcontainers (Python) | 4.15.0 | `pip freeze` |
 | mypy | 2.4.1 | `pip freeze` |
 | pg_stat_statements (extension) | 1.12 | `SELECT extversion FROM pg_extension` |
+| MongoDB on Atlas (free cluster) | 8.0.36 | `db.version()` on Atlas |
