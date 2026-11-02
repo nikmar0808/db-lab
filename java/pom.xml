@@ -17,7 +17,7 @@
     <artifactId>billing-lab</artifactId>
     <version>0.1.0</version>
     <name>billing-lab</name>
-    <description>PostgreSQL from Java: the main task built four ways</description>
+    <description>PostgreSQL and MongoDB from Java: the main task built several ways</description>
 
     <properties>
         <java.version>21</java.version>
@@ -45,6 +45,11 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
+        <!-- Spring Data MongoDB and the MongoDB Java driver it runs on (Stage 6). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
 
         <!-- Tests: JUnit 5, AssertJ, Spring's test support, and the JPA test slice. -->
         <dependency>
@@ -61,6 +66,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Testcontainers: a real, throwaway MongoDB replica set for every test run (Stage 6). -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mongodb</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

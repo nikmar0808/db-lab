@@ -1,4 +1,5 @@
-"""Shared set-up for every test: a throwaway PostgreSQL 18 with the lab's accounts and tables (Stage 3, lesson A8).
+"""Shared set-up for every test: a throwaway PostgreSQL 18 with the lab's accounts and tables (Stage 3, lesson A8),
+and, from Stage 6, a throwaway MongoDB 8.2 replica set with Stage 5's collections.
 
 pytest reads this file before the tests and offers each function decorated with @pytest.fixture to any test
 that names it as a parameter. A fixture prepares something, hands it to the test with "yield", and cleans
@@ -16,12 +17,17 @@ from pathlib import Path
 import psycopg
 import pytest
 from psycopg_pool import ConnectionPool
+from pymongo import MongoClient
+from pymongo.database import Database
+from pymongo.errors import OperationFailure, PyMongoError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.community.postgres import PostgresContainer
+from testcontainers.core.container import DockerContainer
 
 from billing.psycopg_billing import PsycopgBilling
 from billing.sqlalchemy_billing import SqlAlchemyBilling
+from mongo_lab.client import Doc, make_client
 
 # The repository's root folder: this file is python/tests/conftest.py, so two folders up.
 REPO = Path(__file__).resolve().parents[2]
@@ -162,3 +168,81 @@ def count(pool: ConnectionPool, sql: str, value: int) -> int:
     """Runs a SELECT count(*) with one parameter and returns the number."""
     with pool.connection() as conn:
         return conn.execute(sql, (value,)).fetchone()[0]
+
+
+# ---------------------------------------------------------------- MongoDB (Stage 6)
+
+MONGO_PRACTICE = REPO / "mongo" / "practice"
+
+
+@dataclass(frozen=True)
+class LabMongo:
+    """The throwaway MongoDB: its address from this machine."""
+
+    uri: str
+
+
+def _initiate_replica_set(uri: str) -> None:
+    """Waits for mongod to answer, makes it a one-member replica set, and waits until it is the primary.
+
+    The lab's own container does this in its health check (Stage 0). A replica set is needed for transactions.
+    """
+    deadline = time.monotonic() + 60
+    with MongoClient(uri, serverSelectionTimeoutMS=1000) as probe:
+        while True:
+            try:
+                probe.admin.command("ping")
+                break
+            except PyMongoError:
+                if time.monotonic() > deadline:
+                    raise
+                time.sleep(0.5)
+        try:
+            probe.admin.command("replSetInitiate", {"_id": "rs0", "members": [{"_id": 0, "host": "localhost:27017"}]})
+        except OperationFailure as e:
+            if e.code != 23:   # 23 AlreadyInitialized: fine
+                raise
+        while not probe.admin.command("hello").get("isWritablePrimary"):
+            if time.monotonic() > deadline:
+                raise RuntimeError("the test MongoDB did not become primary within 60 seconds")
+            time.sleep(0.5)
+
+
+@pytest.fixture(scope="session")
+def lab_mongo() -> Iterator[LabMongo]:
+    """Starts mongo:8.2 as a one-member replica set for the test run, with Stage 5's collections; removed at the end.
+
+    --setParameter enableTestCommands=1 allows configureFailPoint, used to imitate a failover. No login: this
+    database exists only for the tests and only on this machine (the lab's own MongoDB has login, ADR-014).
+    """
+    container = (
+        DockerContainer("mongo:8.2")
+        .with_command("mongod --replSet rs0 --bind_ip_all --setParameter enableTestCommands=1")
+        .with_exposed_ports(27017)
+        # Stage 5's practice scripts, shown inside the container, so that 51-load-sample.js can build the data.
+        .with_volume_mapping(str(MONGO_PRACTICE), "/practice", "ro")
+    )
+    with container:
+        host = container.get_container_host_ip()
+        host = "127.0.0.1" if host == "localhost" else host
+        uri = f"mongodb://{host}:{container.get_exposed_port(27017)}/?directConnection=true"
+        _initiate_replica_set(uri)
+        code, output = container.exec(
+            ["mongosh", "--quiet", "mongodb://localhost:27017/utility_lab?directConnection=true",
+             "-f", "/practice/51-load-sample.js"])
+        if code != 0:
+            raise RuntimeError(f"51-load-sample.js failed: {output.decode()}")
+        yield LabMongo(uri)
+
+
+@pytest.fixture(scope="session")
+def client(lab_mongo: LabMongo) -> Iterator[MongoClient[Doc]]:
+    """One MongoClient for the run, configured as the program's own (mongo_lab.client.make_client)."""
+    with make_client(lab_mongo.uri) as c:
+        yield c
+
+
+@pytest.fixture
+def db(client: MongoClient[Doc]) -> Database[Doc]:
+    """The lab's database, utility_lab, in the test MongoDB."""
+    return client.get_database("utility_lab")

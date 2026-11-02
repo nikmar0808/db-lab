@@ -5,3 +5,5 @@ SQLAlchemy==2.1.6
 alembic==1.20.1
 # The world's time-zone rules, for zoneinfo on Windows, which has no copy of its own.
 tzdata==2026.6
+# MongoDB's Python driver (Stage 6). It brings dnspython, which looks up mongodb+srv:// addresses.
+pymongo==4.19.0

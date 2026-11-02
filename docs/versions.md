@@ -28,3 +28,6 @@ Recorded on 2026-10-29 from the tools' own output (Stage 0).
 | mypy | 2.4.1 | `pip freeze` |
 | pg_stat_statements (extension) | 1.12 | `SELECT extversion FROM pg_extension` |
 | MongoDB on Atlas (free cluster) | 8.0.36 | `db.version()` on Atlas |
+| PyMongo | 4.19.0 | `pip show pymongo` |
+| MongoDB Java driver | 5.8.1 | Maven, `dependency:list` |
+| Spring Data MongoDB | 5.1.2 | Maven, `dependency:list` |

@@ -106,6 +106,30 @@ docker compose exec -T mongo mongosh "mongodb://lab_app:<password>@127.0.0.1:270
 
 `docs/mongodb-design.md` explains the document design; `docs/results/mongodb-plans.md` holds the plans.
 
+## MongoDB from applications (Stage 6)
+
+The main task against MongoDB, from Python and from Java, on the collections that `51-load-sample.js` builds.
+
+- **Python**, `python/mongo_lab/`, with PyMongo: recording readings once only into the monthly buckets, bulk
+  loading, the bill, the readings and the bill in one multi-document transaction, the account summary in two
+  commands, and bills of two shapes (`schema_version`) read side by side and upgraded in bulk. The billing rule is
+  the one in `billing/domain.py`, shared with the PostgreSQL code.
+- **Java**, `java/src/main/java/com/dblab/billing/mongo/`, with Spring Data MongoDB: `@Document` records, a
+  `MongoRepository`, `MongoTemplate`, and a transaction through `MongoTransactionManager`.
+
+Both run against the local MongoDB or Atlas, chosen by configuration: Python reads `MONGO_TARGET` (`local` or
+`atlas`) or `--target`; Java reads the whole address from `MONGO_URI`. With the passwords from `.env` loaded:
+
+```text
+cd python
+.venv\Scripts\python.exe -m mongo_lab.report --target atlas
+cd ..\java
+mvn -q spring-boot:run -Dspring-boot.run.profiles=mongo-report
+```
+
+The tests start a throwaway MongoDB 8.2 replica set with Testcontainers and load it with `51-load-sample.js`;
+two of them imitate a failover with the test-only command `configureFailPoint`.
+
 ## Layout
 
 | Path | Contents |
@@ -115,8 +139,8 @@ docker compose exec -T mongo mongosh "mongodb://lab_app:<password>@127.0.0.1:270
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
 | `mongo/practice/` | `mongosh` exercises: CRUD, documents and validators, shapes, reports, indexes and plans, TTL |
-| `java/` | The Spring Boot project: migrations, the four ways, tests |
-| `python/` | The Python project: psycopg and SQLAlchemy ways, tests, the Alembic exercise |
+| `java/` | The Spring Boot project: migrations, the four ways, the `mongo` package (Spring Data MongoDB), tests |
+| `python/` | The Python project: psycopg and SQLAlchemy ways, `mongo_lab` (PyMongo), tests, the Alembic exercise |
 | `sql/` | Sample data, the large data set, and scripts to remove them |
 | `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost |
 | `docs/adr/` | Decision records |
