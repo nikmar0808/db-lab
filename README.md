@@ -15,6 +15,7 @@ small, made-up utility data set (customers, premises, meters, meter readings, ta
 |---|---|---|
 | PostgreSQL 18 | `127.0.0.1:5433`, database `utility_lab` | Accounts: `postgres` (superuser), `lab_owner` (owns the tables), `lab_app` (read and write only) |
 | MongoDB 8.2 | `mongodb://lab_app:<password>@127.0.0.1:27017/?directConnection=true&authSource=admin` | One-member replica set `rs0`, login required. Accounts: `mongo_admin` (administrator), `lab_app` (read and write on `utility_lab`). Reachable only from this machine |
+| MongoDB Atlas (free cluster) | `mongodb+srv://lab_app:<password>@<ATLAS_HOST>/utility_lab` | Three-member replica set run by Atlas, encrypted connections, reachable only from addresses on the project's access list. Stands in for a shared environment |
 
 `docker compose down` stops both and keeps the data; `docker compose down -v` also deletes the data.
 
@@ -84,6 +85,27 @@ mvn spring-boot:run -Dspring-boot.run.profiles=measure -Dspring-boot.run.argumen
 `pg_stat_statements`, which records every statement the server runs (`CREATE EXTENSION pg_stat_statements;` once,
 as `postgres`, in `utility_lab`).
 
+## MongoDB through its shell (Stage 5)
+
+`mongo/practice/` holds `mongosh` scripts, shown inside the MongoDB container as `/practice`. Each runs as
+`lab_app`, for example:
+
+```text
+docker compose exec -T mongo mongosh "mongodb://lab_app:<password>@127.0.0.1:27017/utility_lab?directConnection=true&authSource=admin" --quiet -f /practice/51-load-sample.js
+```
+
+| Script | What it does |
+|---|---|
+| `50-crud.js` | Insert, find, update and delete, each beside its SQL, on a scratch collection |
+| `51-load-sample.js` | The sample data as documents (`tariffs`, `customers`, `meter_readings` in monthly buckets, `readings_flat`), with validators and indexes. Also runs against Atlas |
+| `52-shapes.js` | What embedding and referencing make easy and hard; puts back every change |
+| `53-validator.js` | Inserts the validators refuse |
+| `54-reports.js` | Two aggregation reports beside their SQL; the second saves October's bills into `bills`. Also runs against Atlas |
+| `55-large-and-plans.js` | A million readings, query plans before and after each index, and the two shapes' sizes. Local only |
+| `56-ttl.js` | A TTL index removing old documents by itself |
+
+`docs/mongodb-design.md` explains the document design; `docs/results/mongodb-plans.md` holds the plans.
+
 ## Layout
 
 | Path | Contents |
@@ -92,11 +114,13 @@ as `postgres`, in `utility_lab`).
 | `postgres/init/` | PostgreSQL first-start script: accounts and database (also used by the Java tests) |
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
+| `mongo/practice/` | `mongosh` exercises: CRUD, documents and validators, shapes, reports, indexes and plans, TTL |
 | `java/` | The Spring Boot project: migrations, the four ways, tests |
 | `python/` | The Python project: psycopg and SQLAlchemy ways, tests, the Alembic exercise |
 | `sql/` | Sample data, the large data set, and scripts to remove them |
 | `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost |
 | `docs/adr/` | Decision records |
 | `docs/versions.md` | Versions in use, recorded from the tools themselves |
-| `docs/results/` | Measurement results written by the Java program's `measure` profile |
-| `docs/performance-results.md` | What the measurements show |
+| `docs/results/` | Measurement results: PostgreSQL (written by the Java program's `measure` profile) and MongoDB plans |
+| `docs/performance-results.md` | What the PostgreSQL measurements show |
+| `docs/mongodb-design.md` | The MongoDB document design, and what the comparisons showed |

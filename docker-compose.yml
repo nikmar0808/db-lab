@@ -57,6 +57,8 @@ services:
       - ./mongo/scripts:/opt/db-lab:ro
       # First-start scripts, read-only (lesson A2).
       - ./mongo/init:/docker-entrypoint-initdb.d:ro
+      # Stage 5 practice scripts, read-only, run with mongosh -f /practice/... (Stage 5).
+      - ./mongo/practice:/practice:ro
     healthcheck:
       test: ["CMD", "bash", "/opt/db-lab/healthcheck.sh"]
       interval: 5s
