@@ -1,0 +1,1 @@
+"""The audit record both ways (Stage 7): the same records in a PostgreSQL jsonb column and a MongoDB collection."""

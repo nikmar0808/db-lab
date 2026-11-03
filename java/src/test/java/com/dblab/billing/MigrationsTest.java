@@ -32,7 +32,7 @@ class MigrationsTest extends PostgresTestBase {
                 .query(String.class).list();
 
         assertThat(applied).containsExactly("1 tables by lab_owner", "2 calculate bill by lab_owner",
-                "3 reading time index by lab_owner", "4 bill version by lab_owner");
+                "3 reading time index by lab_owner", "4 bill version by lab_owner", "5 audit record by lab_owner");
     }
 
     @Test
