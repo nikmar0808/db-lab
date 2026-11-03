@@ -60,7 +60,7 @@ PostgreSQL 18. In `python/`, with a virtual environment:
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .venv\Scripts\python.exe -m pytest -v
-.venv\Scripts\python.exe -m mypy billing
+.venv\Scripts\python.exe -m mypy billing mongo_lab audit_lab
 ```
 
 `python -m billing.report` reads the lab database both ways and changes nothing. `alembic_practice/` holds an
@@ -130,6 +130,25 @@ mvn -q spring-boot:run -Dspring-boot.run.profiles=mongo-report
 The tests start a throwaway MongoDB 8.2 replica set with Testcontainers and load it with `51-load-sample.js`;
 two of them imitate a failover with the test-only command `configureFailPoint`.
 
+## The audit record both ways (Stage 7)
+
+The same record of each batch of readings received, kept for 90 days, in a PostgreSQL `jsonb` column with a GIN
+index (`V5__audit_record.sql`) and in a MongoDB collection with a TTL index, written and reported on by
+`python/audit_lab/`. An audit write that fails does not fail the business write: the business transaction commits
+first, and the audit write follows in its own transaction, under a short time limit, and cannot raise an error
+(`audited.py`; in Java, the `audit` package, beside the ways of writing it that lose the business write).
+
+With the passwords from `.env` loaded, the comparison loads 200,000 records into both and writes
+`docs/results/audit-comparison.md`, leaving both stores empty:
+
+```text
+cd python
+.venv\Scripts\python.exe -m audit_lab.compare
+```
+
+`sql/practice/30-audit-partitions.sql` compares `DELETE` with dropping a monthly partition. The decision is in
+[ADR-007](docs/adr/ADR-007-audit-data-postgresql-or-mongodb.md).
+
 ## Layout
 
 | Path | Contents |
@@ -139,8 +158,8 @@ two of them imitate a failover with the test-only command `configureFailPoint`.
 | `mongo/scripts/` | MongoDB start-up (key file) and health-check scripts |
 | `mongo/init/` | MongoDB first-start script: the application's account |
 | `mongo/practice/` | `mongosh` exercises: CRUD, documents and validators, shapes, reports, indexes and plans, TTL |
-| `java/` | The Spring Boot project: migrations, the four ways, the `mongo` package (Spring Data MongoDB), tests |
-| `python/` | The Python project: psycopg and SQLAlchemy ways, `mongo_lab` (PyMongo), tests, the Alembic exercise |
+| `java/` | The Spring Boot project: migrations, the four ways, the `mongo` and `audit` packages, tests |
+| `python/` | The Python project: psycopg and SQLAlchemy ways, `mongo_lab` (PyMongo), `audit_lab` (the audit record both ways), tests, the Alembic exercise |
 | `sql/` | Sample data, the large data set, and scripts to remove them |
 | `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost |
 | `docs/adr/` | Decision records |
@@ -148,3 +167,4 @@ two of them imitate a failover with the test-only command `configureFailPoint`.
 | `docs/results/` | Measurement results: PostgreSQL (written by the Java program's `measure` profile) and MongoDB plans |
 | `docs/performance-results.md` | What the PostgreSQL measurements show |
 | `docs/mongodb-design.md` | The MongoDB document design, and what the comparisons showed |
+| `docs/results/audit-comparison.md` | The audit record in both databases: space, plans, the report, expiry |

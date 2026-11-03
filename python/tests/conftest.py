@@ -217,7 +217,7 @@ def lab_mongo() -> Iterator[LabMongo]:
     """
     container = (
         DockerContainer("mongo:8.2")
-        .with_command("mongod --replSet rs0 --bind_ip_all --setParameter enableTestCommands=1")
+        .with_command("mongod --replSet rs0 --bind_ip_all --setParameter enableTestCommands=1 --setParameter ttlMonitorSleepSecs=1")
         .with_exposed_ports(27017)
         # Stage 5's practice scripts, shown inside the container, so that 51-load-sample.js can build the data.
         .with_volume_mapping(str(MONGO_PRACTICE), "/practice", "ro")
