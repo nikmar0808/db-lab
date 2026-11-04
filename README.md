@@ -1,9 +1,36 @@
-> **Work in progress.** A learning lab, built stage by stage. Not production code.
+> **Finished learning lab, not production code.** PostgreSQL and MongoDB from the application developer's side, built on free tools, with AI assistance. Every result below was measured on the author's laptop, so the numbers show orders of magnitude, not benchmarks.
 
 # db-lab
 
-PostgreSQL and MongoDB from the application developer's side, practised from Java and Python on a
-small, made-up utility data set (customers, premises, meters, meter readings, tariffs, bills).
+PostgreSQL and MongoDB, practised from Java and Python on a small, made-up utility data set (customers, premises, meters,
+meter readings, tariffs, bills). What the lab taught was then applied to a real service, in
+[`eai-backend-poc`](https://github.com/nikmar0808/eai-backend-poc).
+
+Database administration (backups, server tuning, replication) is left out on purpose.
+
+## What it shows
+
+| Topic | What was built | One result |
+|---|---|---|
+| Rules in the database | Six tables, with each rule proved by an insert that the database refuses; one PL/pgSQL function | |
+| Java data access, four ways | Readings and a bill in one transaction: plain JDBC, `JdbcClient`, Spring Data JPA, a database function | All four give the same bill, and tests prove it |
+| Python data access, two ways | psycopg with hand-written SQL, and the typed SQLAlchemy 2 ORM | The same bill as Java |
+| Migrations | Flyway owns the lab's tables; an Alembic exercise on its own database | One set of tables, one tool |
+| The N+1 problem | The account summary three ways, with statements counted | 501 statements in 142 ms, then 3 in 10 ms, then 1 in 3.6 ms |
+| Writing many rows | Seven ways, timed on 5,000 rows | A commit per row 3.8 s; a JDBC batch 96 ms; `COPY` 41 ms |
+| Paging | `OFFSET` against keyset, on a deep page | 77 ms against 0.02 ms |
+| Lost updates | Two sessions on one row, prevented by locking and by a version number | |
+| MongoDB design | Embedding against referencing; readings in monthly buckets against one document each | 5.6 MB against 16.0 MB on disk; indexes 0.9 MB against 46.6 MB |
+| MongoDB from applications | PyMongo and Spring Data MongoDB, against a local replica set and Atlas's free tier, with failover imitated by a fail point | |
+| PostgreSQL or MongoDB | One audit record in both, 200,000 records: `jsonb` with GIN against a collection with a TTL index | The same report, 72 ms against 91 ms; 189 MB against 60 MB on disk |
+| An audit write that fails | Written after the business commit, with a time limit, unable to raise; tested beside the ways that lose the business write | [ADR-007](docs/adr/ADR-007-audit-data-postgresql-or-mongodb.md) |
+
+Full results: [`docs/performance-results.md`](docs/performance-results.md), [`docs/mongodb-design.md`](docs/mongodb-design.md)
+and [`docs/results/`](docs/results/). Every pull request runs a secret scan, 46 Java tests and 46 Python tests against
+throwaway databases, and a type check.
+
+The retrospective of this lab and `eai-backend-poc` together is in
+[that repository](https://github.com/nikmar0808/eai-backend-poc/blob/main/docs/RETROSPECTIVE.md).
 
 ## Start the databases
 
@@ -42,13 +69,14 @@ next start builds it all again.
 | `meter` | Meters installed at premises |
 | `meter_reading` | Energy recorded by a meter for the day starting at `read_at` |
 | `bill` | One bill per premise and period |
+| `audit_record` | One record of each batch received, kept for 90 days |
 
 ## The Java project
 
 Spring Boot 4 with JDBC, `JdbcClient`, Spring Data JPA and Hibernate, Flyway and HikariCP. The main task,
 recording readings and producing a bill in one transaction, is built four ways: plain JDBC, `JdbcClient`,
-Spring Data JPA, and a call to the database function. The account summary is built three ways (Stage 4). `mvn verify` in `java/` runs every test against a
-throwaway PostgreSQL 18 started by Testcontainers, so Docker must be running.
+Spring Data JPA, and a call to the database function. The account summary is built three ways. `mvn verify` in `java/`
+runs every test against a throwaway PostgreSQL 18 and MongoDB 8.2 started by Testcontainers, so Docker must be running.
 
 ## The Python project
 
@@ -66,7 +94,7 @@ python -m venv .venv
 `python -m billing.report` reads the lab database both ways and changes nothing. `alembic_practice/` holds an
 Alembic exercise on its own database, `alembic_lab`, never on `utility_lab`.
 
-## Performance work (Stage 4)
+## Performance work
 
 `sql/03-large-data.sql` adds about a million made-up readings (`-v customers=300` for 300,000);
 `sql/04-remove-large-data.sql` removes exactly those rows. On that data:
@@ -85,7 +113,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=measure -Dspring-boot.run.argumen
 `pg_stat_statements`, which records every statement the server runs (`CREATE EXTENSION pg_stat_statements;` once,
 as `postgres`, in `utility_lab`).
 
-## MongoDB through its shell (Stage 5)
+## MongoDB through its shell
 
 `mongo/practice/` holds `mongosh` scripts, shown inside the MongoDB container as `/practice`. Each runs as
 `lab_app`, for example:
@@ -104,9 +132,7 @@ docker compose exec -T mongo mongosh "mongodb://lab_app:<password>@127.0.0.1:270
 | `55-large-and-plans.js` | A million readings, query plans before and after each index, and the two shapes' sizes. Local only |
 | `56-ttl.js` | A TTL index removing old documents by itself |
 
-`docs/mongodb-design.md` explains the document design; `docs/results/mongodb-plans.md` holds the plans.
-
-## MongoDB from applications (Stage 6)
+## MongoDB from applications
 
 The main task against MongoDB, from Python and from Java, on the collections that `51-load-sample.js` builds.
 
@@ -130,7 +156,7 @@ mvn -q spring-boot:run -Dspring-boot.run.profiles=mongo-report
 The tests start a throwaway MongoDB 8.2 replica set with Testcontainers and load it with `51-load-sample.js`;
 two of them imitate a failover with the test-only command `configureFailPoint`.
 
-## The audit record both ways (Stage 7)
+## The audit record both ways
 
 The same record of each batch of readings received, kept for 90 days, in a PostgreSQL `jsonb` column with a GIN
 index (`V5__audit_record.sql`) and in a MongoDB collection with a TTL index, written and reported on by
@@ -161,10 +187,9 @@ cd python
 | `java/` | The Spring Boot project: migrations, the four ways, the `mongo` and `audit` packages, tests |
 | `python/` | The Python project: psycopg and SQLAlchemy ways, `mongo_lab` (PyMongo), `audit_lab` (the audit record both ways), tests, the Alembic exercise |
 | `sql/` | Sample data, the large data set, and scripts to remove them |
-| `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost |
+| `sql/practice/` | SQL exercises: rules, Oracle differences, time zones, window functions, bills, query plans, index cost, partitions |
 | `docs/adr/` | Decision records |
 | `docs/versions.md` | Versions in use, recorded from the tools themselves |
-| `docs/results/` | Measurement results: PostgreSQL (written by the Java program's `measure` profile) and MongoDB plans |
+| `docs/results/` | Measurement results: PostgreSQL (written by the Java program's `measure` profile), MongoDB plans, the audit comparison |
 | `docs/performance-results.md` | What the PostgreSQL measurements show |
 | `docs/mongodb-design.md` | The MongoDB document design, and what the comparisons showed |
-| `docs/results/audit-comparison.md` | The audit record in both databases: space, plans, the report, expiry |

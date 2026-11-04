@@ -1,8 +1,7 @@
 # Decision records
 
 Numbers are unique across the author's repositories, so a number refers to one decision wherever
-it is quoted. Records 001 to 005 and 010 to 012 belong to eai-azure-poc and eai-backend-poc;
-006 is reserved for eai-backend-poc.
+it is quoted. Records 001 to 006 and 010 to 012 belong to eai-azure-poc and eai-backend-poc.
 
 | Record | Decision |
 |---|---|
